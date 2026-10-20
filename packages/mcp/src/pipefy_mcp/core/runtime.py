@@ -1,5 +1,5 @@
 from __future__ import annotations
-
+import os
 from pipefy_sdk import PipefyClient, PipefyEngine
 from starlette.requests import Request
 
@@ -149,6 +149,26 @@ class McpRuntime:
             issuer_url=issuer_url,
             required_scopes=settings.rs.required_scopes,
         )
+        if os.getenv(
+    "INSIGNA_MCP_SERVICE_ACCOUNT_MODE", ""
+).lower() == "true":
+
+            if (
+                not settings.jwt.issuer_url
+                or not settings.jwt.verify_audience
+                or not settings.jwt.audience
+                or not settings.rs.required_scopes
+            ):
+                raise RuntimeError(
+                    "Service account mode requires an explicit "
+                    "OAuth issuer, verified audience and scopes"
+                )
+        
+            return (
+                StartupIdentity.from_configured_credential(settings),
+                inbound_auth,
+            )
+        
         return RequestScopedIdentity(), inbound_auth
 
     @staticmethod
